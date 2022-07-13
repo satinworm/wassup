@@ -8,18 +8,21 @@ import AttachFileIcon from "@mui/icons-material/AttachFile";
 import { useCollection } from "react-firebase-hooks/firestore";
 import Message from "./Message";
 import InsertEmoticonIcon from "@mui/icons-material/InsertEmoticon";
+import SendIcon from "@mui/icons-material/Send";
 import MicIcon from "@mui/icons-material/Mic";
 import { useRef, useState } from "react";
 import firebase from "firebase";
 import getRecipientEmail from "../utils/getRecipientEmail";
 import TimeAgo from "timeago-react";
-
+import { storage, app } from "../firebase";
 
 export default function ChatScreen({ chat, messages }) {
    const [user] = useAuthState(auth);
    const [input, setInput] = useState("");
+   const [imageToMessage, setImageToMessage] = useState(null);
    const router = useRouter();
    const endOfMessagesRef = useRef(null);
+   const filepickerRef = useRef(null);
    const [messagesSnapshot] = useCollection(
       db
          .collection("chats")
@@ -56,8 +59,8 @@ export default function ChatScreen({ chat, messages }) {
       endOfMessagesRef.current.scrollIntoView({
          behavior: "smooth",
          block: "start",
-      })
-   }
+      });
+   };
 
    const sendMessage = (e) => {
       e.preventDefault();
@@ -68,18 +71,84 @@ export default function ChatScreen({ chat, messages }) {
          },
          { merge: true }
       );
-      db.collection("chats").doc(router.query.id).collection("messages").add({
-         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-         message: input,
-         user: user.email,
-         photoUrl: user.photoURL,
-      });
+      db.collection("chats")
+         .doc(router.query.id)
+         .collection("messages")
+         .add({
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            message: input,
+            user: user.email,
+            photoUrl: user.photoURL,
+         })
+         .then((doc) => {
+            if (imageToMessage) {
+               // 1st attempt to upload image
+               // db.collection("chats").doc(router.query.id).collection("messages").doc(doc.id).update({
+               //    image: imageToMessage,
+               // });
+               // removeImage();
+               const uploadTask = storage
+                  .ref(`chats/${router.query.id}/${doc.id}`)
+                  .putString(imageToMessage, "data_url");
+               removeImage();
+
+               uploadTask.on(
+                  "state_change",
+                  null,
+                  error => console.log(error),
+                  () => {
+                     storage
+                        .ref(`chats/${router.query.id}/${doc.id}`)
+                        .getDownloadURL()
+                        .then(url => {
+                           db.collection("chats")
+                              .doc(router.query.id)
+                              .collection("messages")
+                              .doc(doc.id)
+                              .update({
+                                 image: url,
+                              });
+                        }).catch(error => console.log(error));
+                  }
+                  //  () => {
+                     // storage
+                     //    .ref('chats')
+                     //    .child(router.query.id)
+                     //    .getDownloadURL()
+                     //    .then((url) => {
+                     //       db.collection("chats").doc(router.query.id).set(
+                     //          {
+                     //             image: url,
+                     //          },
+                     //          { merge: true }
+                     //       );
+                     //    })
+                  //
+               )
+            }
+         });
+
       setInput("");
       scrollToBottom();
    };
 
    const recipient = recipientSnapshot?.docs?.[0]?.data();
    const recipientEmail = getRecipientEmail(chat.users, user);
+
+   const addImageToMessage = (e) => {
+      const reader = new FileReader();
+      if (e.target.files[0]) {
+         reader.readAsDataURL(e.target.files[0]);
+      }
+
+      reader.onload = (readerEvent) => {
+         setImageToMessage(readerEvent.target.result);
+      };
+   };
+
+   const removeImage = () => {
+      setImageToMessage(null);
+   };
 
    return (
       <Container>
@@ -97,9 +166,7 @@ export default function ChatScreen({ chat, messages }) {
                      {recipient?.lastSeen?.toDate() ? (
                         <TimeAgo datetime={recipient?.lastSeen?.toDate()} />
                      ) : (
-                        // <div>
-                        //    {moment(recipient?.lastSeen?.toDate()).fromNow()}
-                        // </div>
+                        
                         "Unvailable"
                      )}
                   </p>
@@ -108,9 +175,6 @@ export default function ChatScreen({ chat, messages }) {
                )}
             </HeaderInformation>
             <HeaderIcons>
-               <IconButton>
-                  <AttachFileIcon />
-               </IconButton>
                <IconButton>
                   <MoreVertIcon />
                </IconButton>
@@ -125,6 +189,11 @@ export default function ChatScreen({ chat, messages }) {
          <InputContainer>
             <InsertEmoticonIcon />
             <Input value={input} onChange={(e) => setInput(e.target.value)} />
+            {imageToMessage && (
+               <ImageToMessage onClick={removeImage}>
+                  <img src={imageToMessage} />
+               </ImageToMessage>
+            )}
             <button
                hidden
                disabled={!input}
@@ -133,7 +202,28 @@ export default function ChatScreen({ chat, messages }) {
             >
                Send Message
             </button>
-            <MicIcon />
+            <IconButton onClick={() => filepickerRef.current.click()}>
+               <AttachFileIcon />
+               <input
+                  ref={filepickerRef}
+                  type="file"
+                  hidden
+                  onChange={addImageToMessage}
+               />
+            </IconButton>
+            <IconButton>
+               <MicIcon />
+            </IconButton>
+            <IconButton>
+               {input  !== "" ? (
+                  <SendIcon
+                     disabled={!input}
+                     hidden
+                     type="submit"
+                     onClick={sendMessage}
+                  />
+               ) : null}
+            </IconButton>
          </InputContainer>
       </Container>
    );
@@ -149,6 +239,19 @@ const Input = styled.input`
    padding: 20px;
    margin-left: 15px;
    margin-right: 15px;
+`;
+const ImageToMessage = styled.div`
+   height: 2.5rem;
+   width: 2.5rem;
+   > img {
+      cursor: pointer;
+      border-radius: 50px;
+      width: 100%;
+      height: 100%;
+      :hover {
+         opacity: 0.7;
+      }
+   }
 `;
 const InputContainer = styled.form`
    display: flex;

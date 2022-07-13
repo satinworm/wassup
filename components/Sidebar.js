@@ -63,13 +63,16 @@ export default function Sidebar() {
 }
 
 const Container = styled.div`
-   flex: .45;
+   flex: 0.45;
    border-right: 1px solid whitesmoke;
    height: 100vh;
-   min-width: 300px;
+   min-width: 100px;
    max-width: 350px;
    overflow-y: scroll;
-
+   @media (max-width: 425px) {
+      min-width: 0px;
+      max-width: 76px;
+   }
    ::-webkit-scrollbar {
       display: none;
    }
