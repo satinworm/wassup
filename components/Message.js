@@ -23,6 +23,7 @@ export default function Message({ user, message }) {
                      src={message.image}
                      className="image"
                      alt="message"
+                     style={{cursor: "pointer", borderRadius: "5px"}}
                      onClick={() => setIsOpen(!isOpen)}
                      onClose={() => setIsOpen(false)}
                   />

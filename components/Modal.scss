@@ -1,5 +1,6 @@
 .Dialog {
    position: fixed;
+   cursor: pointer;
    top: 0;
    left: 0;
    width: 100%;
@@ -16,6 +17,7 @@
       height: 100vh;
 		// width: 100vw;
       object-fit: contain;
+      
 
    }
 	
@@ -23,6 +25,7 @@
 }
 .Dialog-descr {
 	display: flex;
+   cursor: pointer;
 	.btn {
 		position: fixed;
 		top: calc(100vh - 5rem);
