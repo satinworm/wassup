@@ -150,6 +150,8 @@ export default function ChatScreen({ chat, messages }) {
       setImageToMessage(null);
    };
 
+   
+
    return (
       <Container>
          <Header>

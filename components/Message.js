@@ -2,23 +2,31 @@ import styled from "styled-components";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "../firebase";
 import moment from "moment";
-import Image from 'next/image';
+// import Image from "next/image";
+import Modal from "./Modal";
+import { useState } from "react";
+import { Dialog } from "@headlessui/react";
 
 export default function Message({ user, message }) {
    const [userLoggedIn] = useAuthState(auth);
-
+   const [isOpen, setIsOpen] = useState(false);
    const TypeOfMessage = user === userLoggedIn.email ? Sender : Reciever;
 
    return (
       <Container>
+         {isOpen ? <Modal user={user} message={message} /> : null}
          <TypeOfMessage>
             {message.message}
             {message.image && (
                <ImageContainer>
-
-                  <img src={message.image} className="image" alt="message" />
+                  <img
+                     src={message.image}
+                     className="image"
+                     alt="message"
+                     onClick={() => setIsOpen(!isOpen)}
+                     onClose={() => setIsOpen(false)}
+                  />
                   {/* <Image src={message.image} height={600} width={600} layout="fill" /> */}
-
                </ImageContainer>
             )}
             <Timestamp>
@@ -31,8 +39,7 @@ export default function Message({ user, message }) {
    );
 }
 
-const Container = styled.div`
-`;
+const Container = styled.div``;
 const ImageContainer = styled.div`
    width: 200px;
    height: 300px;
@@ -42,7 +49,7 @@ const ImageContainer = styled.div`
       height: 100%;
       object-fit: cover;
    }
-`
+`;
 const MessageElement = styled.p`
    width: fit-content;
    padding: 15px;
