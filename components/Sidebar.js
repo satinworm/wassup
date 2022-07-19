@@ -1,3 +1,5 @@
+import React from 'react';
+import { useState } from 'react';
 import { Avatar, Button, IconButton } from "@mui/material";
 import styled from "styled-components";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
@@ -7,20 +9,29 @@ import * as EmailValidator from "email-validator";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useCollection } from "react-firebase-hooks/firestore";
 import { auth, db } from "../firebase";
-import Chat from './Chat';
+import Chat from "./Chat";
+import CloseIcon from "@mui/icons-material/Close";
 
-export default function Sidebar() {
-   
+const Sidebar = React.memo(function Sidebar() {
+   const [search, setSearch] = useState("");
    const [user] = useAuthState(auth);
-   const userChatRef = db.collection("chats").where("users", "array-contains", user.email);
+   const userChatRef = db
+      .collection("chats")
+      .where("users", "array-contains", user.email);
    const [chatsSnapshot] = useCollection(userChatRef);
 
    const createChat = () => {
-      const input = prompt("Please enter an email address for the user you wish to chat");
+      const input = prompt(
+         "Please enter an email address for the user you wish to chat"
+      );
       console.log("loh");
       if (!input) return null;
 
-      if (EmailValidator.validate(input) && !chatAlreadyExist(input) && input !== user.email) {
+      if (
+         EmailValidator.validate(input) &&
+         !chatAlreadyExist(input) &&
+         input !== user.email
+      ) {
          // добавляю чат в дб
          db.collection("chats").add({
             users: [user.email, input],
@@ -30,10 +41,11 @@ export default function Sidebar() {
 
    const chatAlreadyExist = (recipientEmail) =>
       !!chatsSnapshot?.docs.find(
-         (chat) => chat.data().users.find((user) => user === recipientEmail)?.length > 0
+         (chat) =>
+            chat.data().users.find((user) => user === recipientEmail)?.length >
+            0
       );
 
-   
    return (
       <Container>
          <Header>
@@ -51,16 +63,30 @@ export default function Sidebar() {
 
          <Search>
             <SearchIcon />
-            <SearchInput placeholder="Search in chats" />
+            <SearchInput
+               placeholder="Search in chats"
+               onChange={(event) => {
+                  setSearch(event.target.value);
+               }}
+            />
+            
          </Search>
-         <SidebarButton style={{color: "black"}} onClick={createChat}>Start a new chat</SidebarButton>
+         <SidebarButton style={{ color: "black" }} onClick={createChat}>
+            Start a new chat
+         </SidebarButton>
          {/* List of chats */}
-         {chatsSnapshot?.docs.map((chat) => (
-            <Chat key={chat.id} id={chat.id} users={chat.data().users} />
-         ))}
+         {chatsSnapshot?.docs
+            .filter((val) => {
+               const chat = val.data();
+               return chat.users.find((user) => user.includes(search));
+            })
+            .map((chat) => (
+               <Chat key={chat.id} id={chat.id} users={chat.data().users} />
+            ))}
+         {!Chat && <h3> suka blet</h3>}
       </Container>
    );
-}
+});
 
 const Container = styled.div`
    flex: 0.45;
@@ -119,3 +145,5 @@ const UserAvatar = styled(Avatar)`
    }
 `;
 const IconsContainer = styled.div``;
+
+export default Sidebar;
