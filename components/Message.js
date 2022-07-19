@@ -37,9 +37,10 @@ const ImageContainer = styled.div`
    width: 200px;
    height: 300px;
    > img {
+      margin-top: 5px;
       width: 100%;
       height: 100%;
-      object-fit: contain;
+      object-fit: cover;
    }
 `
 const MessageElement = styled.p`

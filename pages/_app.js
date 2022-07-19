@@ -5,6 +5,7 @@ import Login from '../components/Login';
 import Loading from '../components/Loading';
 import firebase from "firebase";
 import { useEffect } from "react";
+import "../components/Modal.scss";
 
 function MyApp({ Component, pageProps }) {
 	const [user, loading] = useAuthState(auth);
